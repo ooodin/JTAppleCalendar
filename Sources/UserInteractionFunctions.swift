@@ -133,7 +133,6 @@ extension JTAppleCalendarView {
     /// Notifies the container that the size of its view is about to change.
     public func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator, anchorDate: Date?) {
         self.anchorDate = anchorDate
-        calendarViewLayout.clearCache()
     }
     
     /// Generates a range of dates from from a startDate to an
@@ -216,28 +215,28 @@ extension JTAppleCalendarView {
         let selectedDates = self.selectedDates
         let data = reloadDelegateDataSource()
         if data.shouldReload {
-            calendarViewLayout.clearCache()
+            calendarViewLayout.invalidateLayout()
             setupMonthInfoAndMap(with: data.configParameters)
+            
             selectedCellData = [:]
         }
-
+        
         // Restore the selected index paths if dates were already selected.
         if !selectedDates.isEmpty {
-            calendarViewLayout.delayedExecutionClosure.append {[weak self] in
-                guard let _self = self else { return}
-                _self.isReloadDataInProgress = false
-                _self.selectDates(selectedDates, triggerSelectionDelegate: false, keepSelectionIfMultiSelectionAllowed: true)
+            calendarViewLayout.delayedExecutionClosure.append {[unowned self] in
+                self.isReloadDataInProgress = false
+                self.selectDates(selectedDates, triggerSelectionDelegate: false, keepSelectionIfMultiSelectionAllowed: true)
             }
         }
 
         // Add calendar reload completion 
-        calendarViewLayout.delayedExecutionClosure.append {[weak self] in
-            guard let _self = self else { return }
-            _self.isReloadDataInProgress = false
+        calendarViewLayout.delayedExecutionClosure.append {[unowned self] in
+            self.isReloadDataInProgress = false
             completionHandler?()
-            if !_self.generalDelayedExecutionClosure.isEmpty { _self.executeDelayedTasks(.general) }
+            if !self.generalDelayedExecutionClosure.isEmpty { self.executeDelayedTasks(.general) }
         }
                 
+        if !data.shouldReload { calendarViewLayout.shouldClearCacheOnInvalidate = false }
         super.reloadData()
     }
     
@@ -412,12 +411,7 @@ extension JTAppleCalendarView {
             } else {
                 fixedScrollSize = frame.width
             }
-
-            var section = contentOffset.x / fixedScrollSize
-            let roundedSection = round(section)
-            if abs(roundedSection - section) < errorDelta { section = roundedSection }
-            section = CGFloat(Int(section))
-
+            let section = CGFloat(Int(contentOffset.x / fixedScrollSize))
             xOffset = (fixedScrollSize * section)
             switch destination {
             case .next:

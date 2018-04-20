@@ -109,6 +109,7 @@ class JTAppleCalendarLayout: UICollectionViewLayout, JTAppleCalendarLayoutProtoc
         thereAreDecorationViews = true
     }
 
+    
     init(withDelegate delegate: JTAppleCalendarDelegateProtocol) {
         super.init()
         self.delegate = delegate
@@ -121,11 +122,6 @@ class JTAppleCalendarLayout: UICollectionViewLayout, JTAppleCalendarLayoutProtoc
         lastSetCollectionViewSize = collectionView!.frame
         
         if !layoutIsReadyToBePrepared {
-            // Layoout may not be ready, but user might have reloaded with an anchor date
-            let requestedOffset = delegate.requestedContentOffset
-            if requestedOffset != .zero { collectionView!.setContentOffset(requestedOffset, animated: false) }
-            
-            // execute any other delayed tasks
             executeDelayedTasks()
             return
         }
@@ -147,7 +143,7 @@ class JTAppleCalendarLayout: UICollectionViewLayout, JTAppleCalendarLayoutProtoc
         // Set the first content offset only once. This will prevent scrolling animation on viewDidload.
         if !firstContentOffsetWasSet {
             firstContentOffsetWasSet = true
-            let firstContentOffset = delegate.requestedContentOffset
+            let firstContentOffset = delegate.firstContentOffset
             collectionView!.setContentOffset(firstContentOffset, animated: false)
         }
         daysInSection.removeAll() // Clear chache
@@ -198,12 +194,10 @@ class JTAppleCalendarLayout: UICollectionViewLayout, JTAppleCalendarLayoutProtoc
         var headerGuide = 0
         let fullSection = numberOfRows * maxNumberOfDaysInWeek
         var extra = 0
-        
-        
-        xCellOffset = sectionInset.left
+		
+        xCellOffset = sectionInset.left 
         endSeparator = sectionInset.left + sectionInset.right
-        
-        
+		
         for aMonth in monthInfo {
             for numberOfDaysInCurrentSection in aMonth.sections {
                 // Generate and cache the headers
@@ -338,7 +332,7 @@ class JTAppleCalendarLayout: UICollectionViewLayout, JTAppleCalendarLayoutProtoc
             abs(lastSetCollectionViewSize.height - newBounds.height) > errorDelta ||
             abs(lastSetCollectionViewSize.width - newBounds.width) > errorDelta
     }
-    
+	
     /// Returns the layout attributes for all of the cells
     /// and views in the specified rectangle.
     override open func layoutAttributesForElements(in rect: CGRect) -> [UICollectionViewLayoutAttributes]? {
@@ -538,6 +532,7 @@ class JTAppleCalendarLayout: UICollectionViewLayout, JTAppleCalendarLayoutProtoc
         }
         let width = cellSize.width - ((sectionInset.left / 7) + (sectionInset.right / 7))
         var size: (width: CGFloat, height: CGFloat) = (width, cellSize.height)
+		
         if itemSizeWasSet {
             if scrollDirection == .vertical {
                 size.height = cellSize.height
@@ -581,7 +576,7 @@ class JTAppleCalendarLayout: UICollectionViewLayout, JTAppleCalendarLayoutProtoc
     func sizeOfContentForSection(_ section: Int) -> CGFloat {
         switch scrollDirection {
         case .horizontal:
-            return cellCache[section]![0].4 * CGFloat(maxNumberOfDaysInWeek) + sectionInset.left + sectionInset.right
+            return cellCache[section]![0].4 * CGFloat(maxNumberOfDaysInWeek) + sectionInset.left
         case .vertical:
             let headerSizeOfSection = !headerCache.isEmpty ? headerCache[section]!.5 : 0
             return cellCache[section]![0].5 * CGFloat(numberOfRowsForMonth(section)) + headerSizeOfSection
@@ -662,7 +657,13 @@ class JTAppleCalendarLayout: UICollectionViewLayout, JTAppleCalendarLayoutProtoc
         }
         return attributes
     }
-
+    open override func invalidateLayout() {
+        super.invalidateLayout()
+        
+        if shouldClearCacheOnInvalidate { clearCache() }
+        shouldClearCacheOnInvalidate = true
+    }
+    
     func clearCache() {
         headerCache.removeAll()
         cellCache.removeAll()
@@ -678,4 +679,14 @@ class JTAppleCalendarLayout: UICollectionViewLayout, JTAppleCalendarLayoutProtoc
         stride = 0
         firstContentOffsetWasSet = false
     }
+}
+
+extension JTAppleCalendarLayout {
+	
+	override func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint) -> CGPoint {
+//		let section = sectionFromOffset(proposedContentOffset.x)
+//		let sectionSize = sectionSize[section]
+	
+		return CGPoint(x: 0, y: 0)
+	}
 }

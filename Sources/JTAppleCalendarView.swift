@@ -37,11 +37,10 @@ open class JTAppleCalendarView: UICollectionView {
     @IBInspectable open var cellSize: CGFloat = 0 {
         didSet {
             if oldValue == cellSize { return }
-            if scrollDirection == .horizontal {
-                calendarViewLayout.cellSize.width = cellSize
-            } else {
-                calendarViewLayout.cellSize.height = cellSize
-            }
+ 
+			calendarViewLayout.cellSize.width = cellSize
+			calendarViewLayout.cellSize.height = cellSize
+			
             calendarViewLayout.invalidateLayout()
             calendarViewLayout.itemSizeWasSet = cellSize == 0 ? false: true
         }
@@ -115,7 +114,7 @@ open class JTAppleCalendarView: UICollectionView {
     
     var anchorDate: Date?
     
-    var requestedContentOffset: CGPoint {
+    var firstContentOffset: CGPoint {
         var retval: CGPoint = .zero
         guard let date = anchorDate else { return retval }
         
@@ -168,27 +167,23 @@ open class JTAppleCalendarView: UICollectionView {
         get { return theData.sectionToMonthMap }
         set { theData.sectionToMonthMap = monthMap }
     }
-
-    var decelerationRateMatchingScrollingMode: CGFloat {
-        switch scrollingMode {
-        case .stopAtEachCalendarFrame: return UIScrollViewDecelerationRateFast
-        case .stopAtEach, .stopAtEachSection: return UIScrollViewDecelerationRateFast
-        case .nonStopToSection, .nonStopToCell, .nonStopTo, .none: return UIScrollViewDecelerationRateNormal
-        }
-    }
-
+    
     /// Configure the scrolling behavior
     open var scrollingMode: ScrollingMode = .stopAtEachCalendarFrame {
         didSet {
-            decelerationRate = decelerationRateMatchingScrollingMode
-            #if os(iOS)
-                switch scrollingMode {
-                case .stopAtEachCalendarFrame:
-                    isPagingEnabled = true
-                default:
-                    isPagingEnabled = false
-                }
-            #endif
+            switch scrollingMode {
+            case .stopAtEachCalendarFrame: decelerationRate = UIScrollViewDecelerationRateFast
+            case .stopAtEach, .stopAtEachSection: decelerationRate = UIScrollViewDecelerationRateFast
+            case .nonStopToSection, .nonStopToCell, .nonStopTo, .none: decelerationRate = UIScrollViewDecelerationRateNormal
+            }
+//            #if os(iOS)
+//                switch scrollingMode {
+//                case .stopAtEachCalendarFrame:
+//                    isPagingEnabled = true
+//                default:
+//                    isPagingEnabled = false
+//                }
+//            #endif
         }
     }
 }
